@@ -1,0 +1,138 @@
+---
+title: "Metro"
+author: "Christian Barz"
+date: "25 5 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+```
+
+# Memory
+
+# True data generating process
+
+```{r}
+n <- 1
+m <- 2
+sigma <- 10.
+
+# done a series of experiments and repeated it 4 times
+x <- rep.int(x = seq(from = 0, to = 20, by = 1),
+             times = 4)
+y <- sapply(x, function(i){
+  rnorm(n = 1,
+        mean = m * i + n,
+        sd = sigma)
+})
+
+# system matrix, design
+df <- dplyr::tibble(x = x,
+                    intercept = 1)
+X <- as.matrix(df)
+# model y = A*x, mit A hat hat eine konstante spalte 1 für den intercept
+parameter <- c(m,n)
+sd <- sigma
+```
+
+
+## likelihood
+
+```{r}
+likelihood <- function(X,y, parameter, sd = 3){
+  yhat <- X %*% parameter
+ 
+  likelihood_per_data_point <- dnorm(y, 
+                                     mean = yhat,
+                                     sd = sd,
+                                     log = TRUE)
+  sum_of_likelihoods <- sum(likelihood_per_data_point)
+  
+  
+  return(sum_of_likelihoods)
+}
+```
+
+### plot likelihood
+
+
+
+
+## prior
+
+```{r}
+prior <- function(parameter){
+  log_prob_parameter <- dnorm(parameter, sd = 3, log = TRUE)
+  sum(log_prob_parameter)
+}
+```
+
+
+## posterior
+
+```{r}
+posterior <- function(parameter, X,y){
+  likelihood(X = X, y = y, parameter = parameter) + prior(parameter)
+}
+```
+
+## MH
+
+**ingredients**
+
+- proposal distribution
+- random initial value
+
+### proposal function
+
+```{r}
+proposal_function <- function(parameter){
+  new_parameter <- parameter
+  for (i in 1:NROW(parameter)) {
+    new_parameter[i] <- rnorm(n = 1, mean = parameter[i], sd = 3)
+  }
+  
+  new_parameter
+}
+```
+
+### accep
+
+
+```{r}
+MH <- function(initial_value, iterations){
+  chain <- array(dim = c(iterations+1, 2))
+  
+  chain[1,] <- initial_value
+  for (i in 1:iterations) {
+    
+    candidate <- proposal_function(chain[i,])
+    
+    acceptance <- exp(posterior(X = X,
+                                y= y,
+                                parameter = candidate) - 
+                        posterior(X = X, 
+                                  y = y, 
+                                  parameter = chain[i,])
+                      )
+   
+    if(runif(1) < acceptance){
+      chain[i+1,] <- candidate
+    }else{
+      chain[i+1,] <- chain[i,]
+    }
+  }
+  return(chain)
+}
+```
+
+
+## test
+
+```{r}
+startvalue = c(4,0)
+chain = MH(startvalue, 10000)
+```
+

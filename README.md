@@ -159,3 +159,59 @@ Unser Beispiel schreibt sich somit
 Mit dem Metropolis-Hastings algrotihmus können von einer beliebigen
 Wascheinlichkeitsverteilung *P*(*x*) Stichproben gezogen werden, wenn zu
 *P*(*x*) proportionale Funktion bekannt ist.
+
+# short story
+
+Consider a linear regression problem
+
+*y* = *m* ⋅ *x* + *n*,
+in which we want to approximate the join probatility distribution
+*P*(*θ*) = *P*(*m*, *n*).
+
+We make the following assumptions:
+
+1.  *n*, *m* and *x* are statistically independent, i.e.
+    -*P*(*θ*\|*x*) = *P*(*θ*) -*P*(*n*, *m*) = *P*(*n*) ⋅ *P*(*m*)
+
+Hence we have
+
+$$
+\\begin{align}
+P(\\theta\|y,x) &\\propto P(y\|\\theta,x) \\cdot P(\\theta\|x)\\\\
+P(m,n\|y,x) &\\propto P(y\|m,n,x) \\cdot P(m) \\cdot P(n)
+\\end{align}
+$$
+
+## Prior
+
+We set the following prior distributions
+
+*P*(*m*) = *P*(*n*) = Normal(*m**e**a**n*, *s**d*)
+Where `mean` and `sd` are parameters we have to set This leads to `R`
+code
+
+``` r
+prior_prob <- function(n, mean_n = 0., sd_n = 1., log =FALSE){
+  # returns normal densitiy of n
+  stats::dnorm(n, mean_n, sd_n, log = FALSE)
+}
+prior_sample <- function(n=1, mean_n = 0, sd_n = 1){
+  # returns a sample from the normal 
+  stats::rnorm(n, mean = mean_n, sd = sd_n)
+}
+```
+
+## likelihood
+
+*P*(*y*<sub>*i*</sub>\|*m*, *n*, *x*<sub>*i*</sub>) = Normal(*y*<sub>*i*</sub> − *m* ⋅ *x*<sub>*i*</sub> + *n*, *s**d*)
+
+in `R` code
+
+``` r
+likelihood_prob <- function(y,mean_y=0, sd_y=1){
+  stats::dnorm(y, mean_y, sd_y)
+}
+
+likelihood_sample <- function(n=1, mean_y=0., sd_y=1.){
+  stats::rnorm(n, mean = mean_y, sd = sd_y)}
+```
