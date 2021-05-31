@@ -1,8 +1,9 @@
 sbc
 ================
 Christian Barz
-created 2021-05-14, updated: 2021-05-27
+created 2021-05-27, updated: 2021-05-27
 
+-   [to dos](#to-dos)
 -   [sbc](#sbc)
     -   [steuerungsparameter](#steuerungsparameter)
     -   [random variable to analyse the
@@ -13,6 +14,13 @@ created 2021-05-14, updated: 2021-05-27
     -   [posterior (draws from the
         sampler)](#posterior-draws-from-the-sampler)
     -   [sbc](#sbc-1)
+
+# to dos
+
+-   [ ] include a real sampler
+-   [ ] include a “real” model
+-   [ ] expand to a vector of random variables (auswertungsfunktionen
+    der samples)
 
 # sbc
 

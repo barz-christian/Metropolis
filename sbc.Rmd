@@ -1,7 +1,7 @@
 ---
 title: "sbc"
 author: "Christian Barz"
-date: "created 2021-05-14, updated: `r lubridate::today()`"
+date: "created 2021-05-27, updated: `r lubridate::today()`"
 output: 
   github_document:
     toc: true
@@ -12,6 +12,12 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 ```
+
+# to dos
+
+- [ ] include a real sampler
+- [ ] include a "real" model
+- [ ] expand to a vector of random variables (auswertungsfunktionen der samples)
 
 # sbc
 
