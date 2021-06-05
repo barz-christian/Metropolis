@@ -1,7 +1,7 @@
 sbc
 ================
 Christian Barz
-created 2021-05-27, updated: 2021-05-27
+created 2021-05-27, updated: 2021-05-28
 
 -   [to dos](#to-dos)
 -   [sbc](#sbc)
@@ -28,7 +28,7 @@ created 2021-05-27, updated: 2021-05-27
 
 ``` r
 L <- 100 # number of posterior draws
-N <- 1000 # 
+N <- 10000 # 
 parameters <- 1 # additional parameters, e.g. predictor matrix or hyperparameters
 ```
 
@@ -154,7 +154,7 @@ values <- sbc(
 ### analyse values
 
 ``` r
-hist(values)
+hist(values, breaks = L)
 ```
 
 ![](sbc_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->

@@ -25,7 +25,7 @@ library(dplyr)
 
 ```{r}
 L <- 100 # number of posterior draws
-N <- 1000 # 
+N <- 10000 # 
 parameters <- 1 # additional parameters, e.g. predictor matrix or hyperparameters
 ```
 
@@ -156,7 +156,7 @@ values <- sbc(
 ### analyse values
 
 ```{r}
-hist(values)
+hist(values, breaks = L)
 ```
 
 
