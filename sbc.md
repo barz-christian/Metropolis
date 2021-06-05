@@ -1,30 +1,38 @@
 sbc
 ================
 Christian Barz
-created 2021-05-27, updated: 2021-05-28
+created 2021-05-27, updated: 2021-06-02
 
--   [to dos](#to-dos)
--   [sbc](#sbc)
-    -   [steuerungsparameter](#steuerungsparameter)
-    -   [random variable to analyse the
+-   [1 to dos](#to-dos)
+-   [2 Simmulation based calibration](#simmulation-based-calibration)
+-   [3 A basic Implementation](#a-basic-implementation)
+    -   [3.1 steuerungsparameter](#steuerungsparameter)
+    -   [3.2 random variable to analyse the
         parameter](#random-variable-to-analyse-the-parameter)
-    -   [rank statistic](#rank-statistic)
-    -   [prior (draws)](#prior-draws)
-    -   [likelihood (draws)](#likelihood-draws)
-    -   [posterior (draws from the
+    -   [3.3 rank statistic](#rank-statistic)
+    -   [3.4 prior (draws)](#prior-draws)
+    -   [3.5 likelihood (draws)](#likelihood-draws)
+    -   [3.6 posterior (draws from the
         sampler)](#posterior-draws-from-the-sampler)
-    -   [sbc](#sbc-1)
+    -   [3.7 sbc](#sbc)
+-   [4 References](#references)
 
-# to dos
+# 1 to dos
 
 -   [ ] include a real sampler
 -   [ ] include a “real” model
 -   [ ] expand to a vector of random variables (auswertungsfunktionen
     der samples)
 
-# sbc
+# 2 Simmulation based calibration
 
-## steuerungsparameter
+In this note we give a simple implementation of simmulation based
+calibration (sbc). The idea of simmulation based calibration is that
+when
+
+# 3 A basic Implementation
+
+## 3.1 steuerungsparameter
 
 ``` r
 L <- 100 # number of posterior draws
@@ -32,14 +40,14 @@ N <- 10000 #
 parameters <- 1 # additional parameters, e.g. predictor matrix or hyperparameters
 ```
 
-## random variable to analyse the parameter
+## 3.2 random variable to analyse the parameter
 
 ``` r
 # one-dimensional random variable (used in rank statistic)
 f <- function(x){x}
 ```
 
-## rank statistic
+## 3.3 rank statistic
 
 ``` r
 # rank statistic , according to 4.1 in sbc talts
@@ -51,7 +59,7 @@ rank_statistic <- function(f, theta_L, theta){
 }
 ```
 
-## prior (draws)
+## 3.4 prior (draws)
 
 draws a sample from the prior. in general it has the form *P*(*θ*\|*x*)
 as our prior may dependt on an additional variable, e.g. the predictors
@@ -68,7 +76,7 @@ prior_draw <- function(parameters){
 }
 ```
 
-## likelihood (draws)
+## 3.5 likelihood (draws)
 
 in general *P*(*y*\|*θ*, *x*) has to be specified by user and defines a
 test
@@ -82,7 +90,7 @@ likelihood_draw <- function(theta, parameters){
 }
 ```
 
-## posterior (draws from the sampler)
+## 3.6 posterior (draws from the sampler)
 
 we recall bayes theorem
 
@@ -102,7 +110,7 @@ sampler_draws <- function(L,theta,y,parameters){
 }
 ```
 
-## sbc
+## 3.7 sbc
 
 sbc consists in at least 2 steps
 
@@ -111,7 +119,7 @@ sbc consists in at least 2 steps
 
 2.  analyse the output from step 1.
 
-### generate values
+### 3.7.1 generate values
 
 ``` r
 sbc <- function(prior_draw,
@@ -151,10 +159,12 @@ values <- sbc(
   )
 ```
 
-### analyse values
+### 3.7.2 analyse values
 
 ``` r
 hist(values, breaks = L)
 ```
 
 ![](sbc_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+# 4 References

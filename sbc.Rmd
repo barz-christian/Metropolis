@@ -6,6 +6,7 @@ output:
   github_document:
     toc: true
     toc_depth: 2
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
@@ -19,7 +20,12 @@ library(dplyr)
 - [ ] include a "real" model
 - [ ] expand to a vector of random variables (auswertungsfunktionen der samples)
 
-# sbc
+# Simmulation based calibration
+
+In this note we give a simple implementation of simmulation based calibration (sbc). The idea of simmulation based calibration is that when  
+
+
+# A basic Implementation
 
 ## steuerungsparameter 
 
@@ -160,3 +166,4 @@ hist(values, breaks = L)
 ```
 
 
+# References
