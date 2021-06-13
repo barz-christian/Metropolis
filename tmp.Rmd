@@ -8,11 +8,18 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
+library(ggplot2)
 ```
 
 # Memory
 
+
+
 # True data generating process
+
+We generated data in a way one would do it in a lab, i.e. run an experiment multiple times.
+
+
 
 ```{r}
 n <- 1
@@ -37,6 +44,49 @@ parameter <- c(m,n)
 sd <- sigma
 ```
 
+
+
+
+# model / theory
+
+We assume that $y$ depends linear on $x$ and each measurement has a normaly distributed error, i.e.
+
+$$
+y_i = m\cdot x_i + n + \epsilon_i
+$$
+
+or equivalent
+
+$$
+y_i \propto N(m\cdot x_i+ n, \sigma)
+$$
+
+
+Using Bayes rule we estimate the distribution of $n,m$ by
+
+$$
+p(m,n|y,x) \propto p(y|n,n,x)\cdot p(m,n)
+$$
+
+
+Let us be more precise in order to see which additional assumtions we may need for the implementation:
+
+$$
+p(m,n|y_1=y_1,\ldots,y_n=y_n, x_1=x_1,\ldots,x_n=x_n) \propto \\
+ p(y_1=y_1,\ldots,y_n=y_n|n,n,x_1=x_1,\ldots,x_n=x_n)\cdot\\
+ p(m,n)
+$$
+
+Suppose the measurements are independently and identically distributed, then this simplifies to
+
+$$
+p(m,n|y,x) = p(m,n)\cdot \prod_{i=1}^n p(y_i|m,n,x_i)
+$$
+
+to avoid numerical underflow we consider and implement a logarithm
+
+
+# implementation
 
 ## likelihood
 
@@ -98,7 +148,7 @@ proposal_function <- function(parameter){
 }
 ```
 
-### accep
+### acceptance
 
 
 ```{r}
@@ -131,8 +181,43 @@ MH <- function(initial_value, iterations){
 
 ## test
 
+recall our true data generating process $y = m\cdot x + n$
+
+we initialized with
+
 ```{r}
-startvalue = c(4,0)
-chain = MH(startvalue, 10000)
+m
+n
 ```
 
+
+```{r}
+startvalue = c(10,10)
+iterations <- 400000
+chain = MH(startvalue, iterations)
+# discard warmup
+warmup_length <- round(iterations/4, digits = 0)
+chain <- chain[warmup_length:iterations,]
+hist(chain[,1])
+hist(chain[,2])
+```
+
+
+# diagnostics
+
+```{r}
+dt <- tibble(m = chain[,1], n = chain[,2]) %>%
+  mutate(id = 1:nrow(.))
+```
+
+## traceplots
+
+```{r}
+dt %>%
+  ggplot(aes(x=id, y = m)) + geom_point()
+```
+
+```{r}
+dt %>%
+  ggplot(aes(x=id, y = n)) + geom_point()
+```

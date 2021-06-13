@@ -9,23 +9,16 @@
 We implemented the Metropolis-Hastings algorithm for MCMC sampling. This
 README will be used to document the work.
 
-## Installation
-
-And the development version from [GitHub](https://github.com/) with:
-
-``` r
-# install.packages("devtools")
-devtools::install_github("barz-christian/Metropolis")
-```
-
 ## Example
 
 Wir gehen davon aus das wir ein Experiment machen bei dem wir die
 Abhängigkeit von zwei Größen *x* und *y* voneinander verstehen wollen.
 Hierzu führen wir eine Reihe von Experimenten durch. Wir gehen davon aus
 das wir im Experiment *x* vorgeben können und dann *y* messen können.
+Ferner nehmen wir an, dass jede Messung einen normalverteilten Fehler
+hat.
 
-Formal können wir schreiben:
+Formal können wir dies wie folgt schreiben:
 
 *y* = *f*(*x*) + *ϵ*( \* ).
 
@@ -51,8 +44,8 @@ linearer Gleichung genügen: (true data generating process)
 *y* = *m* ⋅ *x* + *n*.
 
 Erzeugen wir also diese Werte uns speichern sie in einer Tabelle
-(tibble). Hierzu nehmen wir an, dass der Fehler /*e**p**s**i**l**o**n*
-normalverteilt mit einer festen standardabweichung *σ* ist:
+(tibble). Hierzu nehmen wir an, dass der Fehler *ϵ* normalverteilt mit
+einer festen Standardabweichung *σ* ist:
 
 ``` r
 # simple linear regression
