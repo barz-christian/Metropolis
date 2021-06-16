@@ -1,17 +1,21 @@
 ---
-title: "Metro"
+title: "Metropolis and Gibbs sampling"
 author: "Christian Barz"
 date: "25 5 2021"
-output: html_document
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true 
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 library(dplyr)
 library(ggplot2)
 ```
 
-# Memory
+# Memo
 
 
 
@@ -49,42 +53,94 @@ sd <- sigma
 
 # model / theory
 
-We assume that $y$ depends linear on $x$ and each measurement has a normaly distributed error, i.e.
+## model
+
+We assume that our observation $y$ depends linear on $x$ and each measurement has a
+normal distributed error, i.e. each observation can be written as
 
 $$
-y_i = m\cdot x_i + n + \epsilon_i
+\begin{equation}
+y_i = m \cdot xi + n + \epsilon_i,
+\end{equation}
 $$
 
-or equivalent
+where $\epsilon_i\sim N(0,\sigma^2)$.
+
+This can be written in the following equivalent form:
 
 $$
-y_i \propto N(m\cdot x_i+ n, \sigma)
+\begin{equation}
+y_i \sim N(m\cdot x_i+n, \sigma^2).
+\end{equation}
 $$
 
+One benefit of the last notation is, that we directly see (the) 3 parameters of our model:
 
-Using Bayes rule we estimate the distribution of $n,m$ by
+- $m$ the slope of the regression line,
+- $n$ the intercept of the regression line,
+- $\sigma^2$ the variance of the error term (corresponds to the amount of error of each measurement).
+
+We do a Bayesian approach to infer the distribution of the regression parameters $n,m$. Hence we have to specify a prior on the parameters. 
+For this example we use:
+
+**!!Include PRIORS here!!**
+
+
+This way we directly see the hyperparameters of the model.
+
+
+
+
+## derivation of the formulas for the likelihood
+
+We are going to derive step by step a term that is proportional to the joint posterior distribution of $n,m$ given $y$. 
+But we do not only want to derive a formula; **no** we also want to derive the sufficient and necessary conditions for the formula, which are often not mentioned.
 
 $$
-p(m,n|y,x) \propto p(y|n,n,x)\cdot p(m,n)
+\begin{align}
+p(m,n|y) & =      & \frac{p(y|m,n) p(m,n)}{p(y)}\\ 
+         &\propto & p(y|m,n)  p(m,n) \\
+         &=       & p(y|m,n)  p(m) p(n) 
+\end{align}
 $$
 
-
-Let us be more precise in order to see which additional assumtions we may need for the implementation:
-
-$$
-p(m,n|y_1=y_1,\ldots,y_n=y_n, x_1=x_1,\ldots,x_n=x_n) \propto \\
- p(y_1=y_1,\ldots,y_n=y_n|n,n,x_1=x_1,\ldots,x_n=x_n)\cdot\\
- p(m,n)
-$$
-
-Suppose the measurements are independently and identically distributed, then this simplifies to
+Here the last line the last line requires that the parameters $m,n$ are statistically independent, i.e. the joint probability is equal to the product of the marginal distributions:
 
 $$
-p(m,n|y,x) = p(m,n)\cdot \prod_{i=1}^n p(y_i|m,n,x_i)
+\begin{equation*}
+p(m,n)=p(m)p(n)
+\end{equation*}
 $$
 
-to avoid numerical underflow we consider and implement a logarithm
+In general the quantity $y$ is a matrix, but for simplicity we restrict to the case when $y=(y_1,\ldots,y_n)$ is a vector. In this case the posterior is proportional to
 
+$$
+\begin{align}
+p(m,n|y)
+&    =    p(m,n|y_1,\ldots,y_n)\\
+&\propto  p(y_1,\ldots,y_n|m,n) p(m) p(n) \\
+& =       \prod_{i=1}^{n} p(y_i|m,n) p(m) p(n)
+\end{align}
+$$
+
+In the last step we used the assumption that the measurements are independently and identically distributed.
+
+In order to avoid numerical underflow we apply the natural logarithm and get:
+
+### log likelihood
+
+$$
+\begin{align}
+\log p(y|m,n) &= \sum_{i=1}^{n} \log p(y_i|m,n)\\
+              &= \sum \log p_{normal}(y_i-m \cdot x_i + n,\sigma^2)
+\end{align}
+$$
+
+### log prior
+
+### log posteriori
+
+Because we have used conjugated priors we know the closed formof the posterior and can compare the true posterior with the approximation we get from our Metropolis implemenation.
 
 # implementation
 
@@ -141,7 +197,9 @@ posterior <- function(parameter, X,y){
 proposal_function <- function(parameter){
   new_parameter <- parameter
   for (i in 1:NROW(parameter)) {
-    new_parameter[i] <- rnorm(n = 1, mean = parameter[i], sd = 3)
+    new_parameter[i] <- rnorm(n = 1, 
+                              mean = parameter[i], 
+                              sd = 1)
   }
   
   new_parameter
@@ -181,9 +239,7 @@ MH <- function(initial_value, iterations){
 
 ## test
 
-recall our true data generating process $y = m\cdot x + n$
-
-we initialized with
+recall our true data generating process $y = m\cdot x + n$ and the values of the parameters
 
 ```{r}
 m
@@ -191,33 +247,77 @@ n
 ```
 
 
-```{r}
+```{r run metropolis}
 startvalue = c(10,10)
-iterations <- 400000
+iterations <- 200
+warmup_length <- round(iterations/10, digits = 0)
+
 chain = MH(startvalue, iterations)
-# discard warmup
-warmup_length <- round(iterations/4, digits = 0)
-chain <- chain[warmup_length:iterations,]
-hist(chain[,1])
-hist(chain[,2])
+
+posterior_samples <- tibble(m = chain[,1],
+             n = chain[,2]) %>%
+  mutate(id = 1:nrow(.)) %>%
+  mutate(warmup = ifelse(id <= warmup_length,TRUE,FALSE))
+
+# plot parameters with warmup discarded
+posterior_samples %>%
+  filter(!warmup) %>%
+  ggplot() + geom_histogram(aes(m))
+
+
+posterior_samples %>%
+  filter(!warmup) %>%
+  ggplot() + geom_histogram(aes(n))
 ```
 
 
 # diagnostics
 
+For simplicity we restrict to visual checks, precisely to traceplots.
+
+
+## traceplots warmup
+
+Traceplot of the slope parameter `n`
+
 ```{r}
-dt <- tibble(m = chain[,1], n = chain[,2]) %>%
-  mutate(id = 1:nrow(.))
+posterior_samples %>%
+  filter(warmup) %>%
+  ggplot(aes(x=id, y = m)) + geom_point()
 ```
 
-## traceplots
+Traceplot of the intercept parameter `n`
 
 ```{r}
-dt %>%
+posterior_samples %>%
+  filter(warmup) %>%
+  ggplot(aes(x=id, y = n)) + geom_point()
+```
+
+## traceplots warmup discarded
+
+```{r}
+posterior_samples %>%
+  filter(!warmup) %>%
   ggplot(aes(x=id, y = m)) + geom_point()
 ```
 
 ```{r}
-dt %>%
+posterior_samples %>%
+  filter(!warmup) %>%
+  ggplot(aes(x=id, y = m)) + geom_line()
+```
+
+
+```{r}
+posterior_samples %>%
+  filter(!warmup) %>%
   ggplot(aes(x=id, y = n)) + geom_point()
+```
+
+
+```{r}
+posterior_samples %>%
+  filter(!warmup) %>%
+  ggplot(aes(x=id, y = n)) + geom_line()
 ```

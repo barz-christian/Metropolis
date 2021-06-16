@@ -1,0 +1,211 @@
+---
+title: "A Gibbs Sampler"
+author: "Christian Barz"
+date: "created: 2021-06-16, reviewed: `r lubridate::today()`"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+```
+
+# A bayesian regression
+
+We consider the following regression
+
+$$
+\begin{align}
+y &= 
+\beta_0 + \beta_1 x + \epsilon\\
+\epsilon &\sim 
+N(0,1/\tau)
+\end{align}
+$$
+
+To do a bayesian regression we need to set prior on the parameters. We do this 
+by using conditionally conjugated priors. 
+A *conditionally conjugated prior for a parameter $x$* for
+a given likelihood gives a posteriori when conditioned on all parameters
+
+$$
+\begin{align}
+\beta_i  & \sim N(\mu_i,1/\tau_i)\\
+\tau & \sim Gamma(a,b)
+\end{align}
+$$
+
+We assume that the hyperparameters $\mu_0,\mu_1,\tau_0,\tau_1,a,b$ are known 
+constants.
+
+By bayes rule the posterior distribution is proportional to
+
+$$
+p(\beta,\tau|y)\propto p(y|\beta,\tau) p(\beta) p(\tau)
+$$
+
+To do Gibbs sampling, we need the conditional posteriori distributions of the parameters.
+
+$$
+\beta_0|x,y,\beta_1,\tau \sim N(\frac{\tau_0\mu_0+\tau\sum_i(y_i-\beta_1x_i)}{\tau_0+n\tau},\frac{1}{\tau_0+n\tau})
+$$
+$$
+\beta_1|x,y,\beta_0,\tau \sim 
+N(\frac{
+  \tau_1\mu_1 + 
+  \tau\sum_i(y_i-\beta_0)x_i 
+}{
+  \tau_1+\tau\sum_ix_i^2
+  }
+,
+\frac{1}{\tau_1+\tau\sum_ix_i^2}
+)
+$$
+
+$$
+\tau|\beta_0,\beta_1,a,b,x,y \sim
+Gamma(a + \frac{N}{2}, b + \sum_i\frac{(y_i\beta_0-\beta_1x_i)^2}{2})
+$$
+
+## define conditional posterior probabilities
+
+```{r}
+sample_beta0 <- function(y,x,beta1,tau,tau0,mu0){
+  N <- NROW(y)
+  precision <- 1 / (tau0 + N * tau)
+  mittelwert <- (tau0 * mu0 + tau * sum(y - beta1 * x) ) / precision
+  
+  return(rnorm(n = 1, 
+               mean = mittelwert,
+               sd = 1/ sqrt(precision))
+         )
+}
+```
+
+
+```{r}
+sample_beta1 <- function(y,x,beta0,tau,tau1,mu1){
+  N <- NROW(y)
+  precision <- 1 / (tau1 + tau * sum(x * x))
+  mittelwert <- (tau1 * mu1 + tau * sum((y-beta0) * x)) / precision
+  
+  return(rnorm(n = 1, 
+               mean = mittelwert, 
+               sd = 1/ sqrt(precision))
+         )
+}
+```
+
+```{r}
+sample_tau <- function(y,x,beta0, beta1, a,b){
+  N <- NROW(y)
+  a_posteriori <- a + N/2
+  b_posteriori <- b + sum((y - beta0 - beta1 * x)^2)/2
+  return(
+    rgamma(n = 1, 
+           shape = a_posteriori,
+           scale = b_posteriori)
+  )
+}
+```
+
+
+
+## gibbs sampler
+
+```{r}
+gibbs <- function(y,x, 
+                  initialvalue, 
+                  #conditional_posteriors,
+                  hyperparameter,
+                  iterations){
+  
+  
+  samples <- array(data = NA, 
+                   dim = c(iterations,
+                           length(initialvalue)))
+  
+  colnames(samples) <- names(initialvalue)
+  
+  samples[1,] <- initialvalue %>%
+    purrr::reduce(cbind)
+  
+  for(i in 2:iterations){
+    
+    samples[i,"beta0"] <- sample_beta0(y = y, 
+                                       x = x, 
+                                       beta1 = samples[i-1,"beta1"],
+                                       tau = samples[i-1,"tau"],
+                                       tau0 = hyperparameter[["tau0"]],
+                                       mu0 =  hyperparameter[["mu0"]])
+    
+    samples[i,"beta1"] <- sample_beta1(y = y, x = x,
+                           beta0 = samples[i,"beta0"], 
+                           tau = samples[i-1,"tau"], 
+                           tau1 = hyperparameter[["tau1"]],
+                           mu1 = hyperparameter[["mu1"]]
+                            )
+    
+    samples[i,"tau"] <- sample_tau(y = y, x = x,
+                                   beta0 = samples[i,"beta0"], 
+                                   beta1 = samples[i,"beta1"],
+                                   a = hyperparameter[["a"]], 
+                                   b = hyperparameter[["b"]]
+                                   )
+  }
+  
+  return(samples)
+}
+```
+
+
+## test
+
+### synthetic data
+
+```{r synthetic data}
+n <- 1
+m <- 2
+sigma <- 10.
+
+# done a series of experiments and repeated it 4 times
+x <- rep.int(x = seq(from = 0, to = 20, by = 1),
+             times = 4)
+y <- sapply(x, function(i){
+  rnorm(n = 1,
+        mean = m * i + n,
+        sd = sigma)
+})
+```
+
+### initial values, hyperparameters
+
+```{r}
+conditional_posteriors <- list(sample_beta0, 
+                               sample_beta1,
+                               sample_tau)
+names(conditional_posteriors) <- c("beta0", "beta1", "tau")
+
+initialvalue <- list(1,1,1)
+names(initialvalue) <- c("beta0", "beta1", "tau")
+
+hyperparameters <- list(0,1,0,1,2,2)
+names(hyperparameters) <- c("mu0", "tau0",
+                            "mu1", "tau1", 
+                            "a", "b")
+```
+
+
+
+```{r}
+gibbs(y = y, x = x, 
+      initialvalue = initialvalue,
+      hyperparameter = hyperparameters, 
+      iterations = 10)
+```
+
